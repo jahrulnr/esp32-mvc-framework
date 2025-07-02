@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MVC - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .navbar .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .navbar .user-name {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .navbar .logout-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .navbar .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .welcome-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .welcome-section h1 {
+            color: #4a5568;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-section p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .actions-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .actions-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .action-btn {
+            display: block;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logs-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logs-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .log-container {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .log-entry.info {
+            color: #63b3ed;
+        }
+        
+        .log-entry.success {
+            color: #68d391;
+        }
+        
+        .log-entry.warning {
+            color: #fbb03b;
+        }
+        
+        .log-entry.error {
+            color: #f56565;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar .container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .welcome-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">ESP32 MVC Dashboard</div>
+            <div class="user-info">
+                <span class="user-name" id="userName">Loading...</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="welcome-section">
+            <h1>Welcome to Your Dashboard</h1>
+            <p>Monitor and control your ESP32 device from this central hub</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon">⚡</div>
+                <div class="value" id="uptime">--</div>
+                <div class="label">Uptime (seconds)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">💾</div>
+                <div class="value" id="memory">--</div>
+                <div class="label">Free Memory (KB)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">🌡️</div>
+                <div class="value" id="temperature">--</div>
+                <div class="label">CPU Temperature</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="icon">📊</div>
+                <div class="value" id="requests">--</div>
+                <div class="label">Total Requests</div>
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <button class="action-btn" onclick="refreshStats()">Refresh Stats</button>
+                <button class="action-btn" onclick="viewLogs()">View System Logs</button>
+                <a href="/api/v1/items" class="action-btn">API Explorer</a>
+                <button class="action-btn" onclick="restartSystem()">Restart System</button>
+                <a href="/" class="action-btn">Back to Home</a>
+                <button class="action-btn" onclick="exportData()">Export Data</button>
+            </div>
+        </div>
+        
+        <div class="logs-section">
+            <h2>System Logs</h2>
+            <div class="log-container" id="logContainer">
+                <div class="loading">Loading system logs...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logUpdateInterval;
+        let statsUpdateInterval;
+        
+        // Check authentication on page load
+        window.addEventListener('load', function() {
+            const token = localStorage.getItem('auth_token');
+            const userName = localStorage.getItem('user_name') || 'User';
+            
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Set user name
+            document.getElementById('userName').textContent = userName;
+            
+            // Start updating stats and logs
+            updateStats();
+            updateLogs();
+            
+            // Set up intervals
+            statsUpdateInterval = setInterval(updateStats, 5000);
+            logUpdateInterval = setInterval(updateLogs, 10000);
+        });
+        
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/v1/status');
+                const data = await response.json();
+                
+                document.getElementById('uptime').textContent = Math.floor(data.uptime / 1000);
+                document.getElementById('memory').textContent = Math.floor(data.free_heap / 1024);
+                document.getElementById('temperature').textContent = '25°C'; // Mock data
+                document.getElementById('requests').textContent = Math.floor(Math.random() * 1000) + 500; // Mock data
+            } catch (error) {
+                console.error('Failed to update stats:', error);
+            }
+        }
+        
+        function updateLogs() {
+            const logContainer = document.getElementById('logContainer');
+            const logs = [
+                { type: 'info', message: `[${new Date().toLocaleTimeString()}] System status check completed` },
+                { type: 'success', message: `[${new Date().toLocaleTimeString()}] Memory usage: ${Math.floor(Math.random() * 40) + 40}%` },
+                { type: 'info', message: `[${new Date().toLocaleTimeString()}] HTTP request processed successfully` },
+                { type: 'warning', message: `[${new Date().toLocaleTimeString()}] High memory usage detected` },
+                { type: 'info', message: `[${new Date().toLocaleTimeString()}] Dashboard accessed by user` }
+            ];
+            
+            // Add new log entry
+            const randomLog = logs[Math.floor(Math.random() * logs.length)];
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${randomLog.type}`;
+            logEntry.textContent = randomLog.message;
+            
+            // Remove loading message if present
+            const loading = logContainer.querySelector('.loading');
+            if (loading) {
+                loading.remove();
+            }
+            
+            logContainer.appendChild(logEntry);
+            
+            // Keep only last 20 log entries
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 20) {
+                entries[0].remove();
+            }
+            
+            // Scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function refreshStats() {
+            updateStats();
+            updateLogs();
+            
+            // Show feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Refreshing...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 1000);
+        }
+        
+        function viewLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        async function restartSystem() {
+            if (confirm('Are you sure you want to restart the system?')) {
+                try {
+                    const response = await fetch('/api/v1/restart', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        alert('System restart initiated. Please wait...');
+                    } else {
+                        alert('Failed to restart system');
+                    }
+                } catch (error) {
+                    alert('Network error. Please try again.');
+                }
+            }
+        }
+        
+        function exportData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                uptime: document.getElementById('uptime').textContent,
+                memory: document.getElementById('memory').textContent,
+                temperature: document.getElementById('temperature').textContent,
+                requests: document.getElementById('requests').textContent
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `esp32-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear intervals
+                if (statsUpdateInterval) clearInterval(statsUpdateInterval);
+                if (logUpdateInterval) clearInterval(logUpdateInterval);
+                
+                // Clear storage
+                localStorage.clear();
+                
+                // Redirect to login
+                window.location.href = '/login';
+            }
+        }
+        
+        // Handle page visibility for performance
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Pause updates when tab is not visible
+                if (statsUpdateInterval) clearInterval(statsUpdateInterval);
+                if (logUpdateInterval) clearInterval(logUpdateInterval);
+            } else {
+                // Resume updates when tab becomes visible
+                statsUpdateInterval = setInterval(updateStats, 5000);
+                logUpdateInterval = setInterval(updateLogs, 10000);
+                updateStats(); // Immediate update
+            }
+        });
+    </script>
+</body>
+</html>

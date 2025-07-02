@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MVC - CSV Database Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .section h2 {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .users-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .users-table tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status.active {
+            background: #68d391;
+            color: #2f855a;
+        }
+        
+        .status.inactive {
+            background: #fc8181;
+            color: #c53030;
+        }
+        
+        .json-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+        }
+        
+        .nav-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/login">Login</a>
+            <a href="/register">Register</a>
+            <a href="/dashboard">Dashboard</a>
+        </div>
+        
+        <h1>CSV Database Demo</h1>
+        
+        <div class="section">
+            <h2>Database Operations</h2>
+            <button class="btn" onclick="loadUsers()">Load Users from CSV</button>
+            <button class="btn" onclick="loadRawJson()">Show Raw JSON</button>
+            <button class="btn" onclick="testLogin()">Test Login (admin@example.com)</button>
+            <button class="btn" onclick="clearDisplay()">Clear</button>
+        </div>
+        
+        <div class="section">
+            <h2>Users Table</h2>
+            <div id="usersDisplay">
+                <div class="loading">Click "Load Users from CSV" to see data from the CSV database</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Raw API Response</h2>
+            <div id="jsonOutput" class="json-output">
+                API responses will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            const display = document.getElementById('usersDisplay');
+            const jsonOutput = document.getElementById('jsonOutput');
+            
+            display.innerHTML = '<div class="loading">Loading users from CSV database...</div>';
+            
+            try {
+                const response = await fetch('/api/v1/users');
+                const data = await response.json();
+                
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.users && data.users.length > 0) {
+                    let html = `
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    data.users.forEach(user => {
+                        const status = user.active ? 'active' : 'inactive';
+                        html += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.name}</td>
+                                <td>${user.email}</td>
+                                <td>${user.role}</td>
+                                <td><span class="status ${status}">${status.toUpperCase()}</span></td>
+                                <td>${user.created_at}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 15px; color: #718096;">
+                            Total users: ${data.total} | Data loaded from CSV database
+                        </p>
+                    `;
+                    
+                    display.innerHTML = html;
+                } else {
+                    display.innerHTML = '<div class="loading">No users found in CSV database</div>';
+                }
+            } catch (error) {
+                display.innerHTML = '<div class="loading" style="color: #e53e3e;">Error loading users: ' + error.message + '</div>';
+                jsonOutput.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function loadRawJson() {
+            const jsonOutput = document.getElementById('jsonOutput');
+            
+            jsonOutput.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch('/api/v1/users');
+                const data = await response.json();
+                
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                jsonOutput.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testLogin() {
+            const jsonOutput = document.getElementById('jsonOutput');
+            
+            jsonOutput.textContent = 'Testing login with admin@example.com...';
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        email: 'admin@example.com',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    alert('Login successful! User data loaded from CSV database.');
+                } else {
+                    alert('Login failed: ' + data.message);
+                }
+            } catch (error) {
+                jsonOutput.textContent = 'Error: ' + error.message;
+                alert('Error testing login: ' + error.message);
+            }
+        }
+        
+        function clearDisplay() {
+            document.getElementById('usersDisplay').innerHTML = '<div class="loading">Click "Load Users from CSV" to see data from the CSV database</div>';
+            document.getElementById('jsonOutput').textContent = 'API responses will appear here...';
+        }
+        
+        // Auto-load users when page loads
+        window.addEventListener('load', function() {
+            setTimeout(loadUsers, 1000);
+        });
+    </script>
+</body>
+</html>

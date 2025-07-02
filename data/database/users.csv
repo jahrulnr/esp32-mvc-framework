@@ -1,0 +1,4 @@
+id,name,email,password,active,role,created_at,updated_at
+1,Admin User,admin@example.com,password,1,admin,2025-07-03 10:00:00,2025-07-03 10:00:00
+2,Regular User,user@example.com,123456,1,user,2025-07-03 10:01:00,2025-07-03 10:01:00
+3,Test User,test@example.com,test123,0,user,2025-07-03 10:02:00,2025-07-03 10:02:00
