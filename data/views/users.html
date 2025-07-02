@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MVC - User Management</title>
+    <link rel="stylesheet" href="/assets/main.css">
+    <style>
+        /* User management specific styles */
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .navbar .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        
+        .navbar .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar .nav-links a:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .actions {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .users-table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .users-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .users-table tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .role-badge.system {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        
+        .role-badge.admin {
+            background: #d69e2e;
+            color: #744210;
+        }
+        
+        .role-badge.user {
+            background: #38a169;
+            color: #1a202c;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-badge.active {
+            background: #68d391;
+            color: #2f855a;
+        }
+        
+        .status-badge.inactive {
+            background: #fc8181;
+            color: #c53030;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #4a5568;
+            margin: 0;
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #718096;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: #4a5568;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group.checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group.checkbox input {
+            width: auto;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert.success {
+            background: #c6f6d5;
+            color: #2f855a;
+            border: 1px solid #68d391;
+        }
+        
+        .alert.error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #fc8181;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        @media (max-width: 768px) {
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .users-table-container {
+                padding: 15px;
+            }
+            
+            .users-table {
+                font-size: 0.9rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="container">
+            <div class="logo">ESP32 MVC</div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/users">Users</a>
+                <a href="/csv-demo">CSV Demo</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>User Management</h1>
+            <p>Manage users with role-based permissions</p>
+        </div>
+
+        <div class="actions">
+            <div>
+                <button class="btn success" onclick="showCreateModal()">Create New User</button>
+                <button class="btn" onclick="loadUsers()">Refresh</button>
+            </div>
+            <div>
+                <span id="userCount">Loading...</span>
+            </div>
+        </div>
+
+        <div class="users-table-container">
+            <div id="usersDisplay">
+                <div class="loading">Loading users...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New User</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <div id="modalAlert" style="display: none;"></div>
+            
+            <form id="userForm">
+                <input type="hidden" id="userId" name="id">
+                
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" name="password" required>
+                    <small style="color: #718096;">Leave empty when editing to keep current password</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">Role *</label>
+                    <select id="role" name="role" required>
+                        <option value="2">User (2)</option>
+                        <option value="1">Admin (1)</option>
+                        <option value="0">System (0)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group checkbox">
+                    <input type="checkbox" id="active" name="active" value="1" checked>
+                    <label for="active">Active</label>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn success" id="submitBtn">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/assets/main.js"></script>
+    <script>
+        let currentUser = null;
+        let users = [];
+        let isEditing = false;
+
+        // Load users on page load
+        ready(() => {
+            loadUsers();
+        });
+
+        async function loadUsers() {
+            const display = document.getElementById('usersDisplay');
+            const userCount = document.getElementById('userCount');
+            
+            display.innerHTML = '<div class="loading">Loading users...</div>';
+            userCount.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/api/v1/admin/users');
+                users = data.users || [];
+                currentUser = data.current_user;
+                
+                userCount.textContent = `Total Users: ${users.length}`;
+                
+                if (users.length === 0) {
+                    display.innerHTML = '<div class="no-data">No users found</div>';
+                    return;
+                }
+                
+                let html = `
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                users.forEach(user => {
+                    const roleClass = getRoleClass(user.role);
+                    const statusClass = user.active ? 'active' : 'inactive';
+                    const statusText = user.active ? 'ACTIVE' : 'INACTIVE';
+                    
+                    html += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td><span class="role-badge ${roleClass}">${user.role_string}</span></td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>${user.created_at}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-small" onclick="viewUser('${user.id}')">View</button>
+                                    <button class="btn btn-small" onclick="editUser('${user.id}')">Edit</button>
+                                    <button class="btn btn-small danger" onclick="deleteUser('${user.id}', '${user.email}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                
+                display.innerHTML = html;
+                
+            } catch (error) {
+                if (error.message.includes('403') || error.message.includes('forbidden')) {
+                    display.innerHTML = '<div class="no-data">You don\'t have permission to view users</div>';
+                    userCount.textContent = 'Access Denied';
+                } else {
+                    display.innerHTML = '<div class="no-data">Error loading users: ' + error.message + '</div>';
+                    userCount.textContent = 'Error';
+                }
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function getRoleClass(role) {
+            switch (role) {
+                case 0: return 'system';
+                case 1: return 'admin';
+                case 2: return 'user';
+                default: return 'user';
+            }
+        }
+
+        function showCreateModal() {
+            isEditing = false;
+            document.getElementById('modalTitle').textContent = 'Create New User';
+            document.getElementById('submitBtn').textContent = 'Create User';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('password').required = true;
+            document.getElementById('userModal').style.display = 'block';
+            hideModalAlert();
+        }
+
+        function editUser(userId) {
+            const user = users.find(u => u.id == userId);
+            if (!user) return;
+            
+            isEditing = true;
+            document.getElementById('modalTitle').textContent = 'Edit User';
+            document.getElementById('submitBtn').textContent = 'Update User';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('name').value = user.name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('password').value = '';
+            document.getElementById('password').required = false;
+            document.getElementById('role').value = user.role;
+            document.getElementById('active').checked = user.active;
+            document.getElementById('userModal').style.display = 'block';
+            hideModalAlert();
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        function showModalAlert(message, type) {
+            const alert = document.getElementById('modalAlert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function hideModalAlert() {
+            document.getElementById('modalAlert').style.display = 'none';
+        }
+
+        // Setup form using ESP32MVC framework
+        ready(() => {
+            window.ESP32MVC.setupForm('userForm', async (data) => {
+                // Handle checkbox
+                data.active = document.getElementById('active').checked ? '1' : '0';
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Processing...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const endpoint = isEditing ? `/api/v1/admin/users/${data.id}` : '/api/v1/admin/users';
+                    const method = isEditing ? 'PUT' : 'POST';
+                    
+                    const result = await apiCall(endpoint, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams(data)
+                    });
+                    
+                    showModalAlert(result.message, 'success');
+                    setTimeout(() => {
+                        closeModal();
+                        loadUsers();
+                    }, 1500);
+                } catch (error) {
+                    showModalAlert(error.message, 'error');
+                } finally {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+
+        async function deleteUser(userId, email) {
+            if (!confirm(`Are you sure you want to delete user "${email}"?`)) {
+                return;
+            }
+            
+            try {
+                const result = await apiCall(`/api/v1/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                showAlert('User deleted successfully', 'success');
+                loadUsers();
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function viewUser(userId) {
+            try {
+                const data = await apiCall(`/api/v1/admin/users/${userId}`);
+                
+                const user = data.user;
+                const permissions = data.permissions;
+                
+                alert(`User Details:
+Name: ${user.name}
+Email: ${user.email}
+Role: ${user.role_string} (${user.role})
+Status: ${user.active ? 'Active' : 'Inactive'}
+Created: ${user.created_at}
+Updated: ${user.updated_at}
+
+Permissions:
+Can Edit: ${permissions.can_edit ? 'Yes' : 'No'}
+Can Delete: ${permissions.can_delete ? 'Yes' : 'No'}`);
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.ESP32MVC.logout();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('userModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

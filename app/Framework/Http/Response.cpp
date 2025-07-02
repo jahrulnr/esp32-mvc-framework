@@ -1,4 +1,5 @@
 #include "Response.h"
+#include <SPIFFS.h>
 
 Response::Response(AsyncWebServerRequest* req) 
     : request(req), statusCode(200), type("text/html") {
@@ -77,8 +78,60 @@ Response& Response::view(const String& template_name, const JsonDocument& data) 
 }
 
 Response& Response::file(const String& path) {
-    // TODO: Implement file serving
-    body = "File serving not implemented yet";
+    // Check if file exists in SPIFFS
+    if (!SPIFFS.exists(path)) {
+        statusCode = 404;
+        body = "File not found";
+        type = "text/plain";
+        return *this;
+    }
+    
+    // Open file
+    File file = SPIFFS.open(path, "r");
+    if (!file) {
+        statusCode = 500;
+        body = "Unable to open file";
+        type = "text/plain";
+        return *this;
+    }
+    
+    // Determine content type based on file extension
+    String contentType = "application/octet-stream"; // Default binary type
+    String lowerPath = path;
+    lowerPath.toLowerCase();
+    
+    if (lowerPath.endsWith(".html") || lowerPath.endsWith(".htm")) {
+        contentType = "text/html";
+    } else if (lowerPath.endsWith(".css")) {
+        contentType = "text/css";
+    } else if (lowerPath.endsWith(".js")) {
+        contentType = "application/javascript";
+    } else if (lowerPath.endsWith(".json")) {
+        contentType = "application/json";
+    } else if (lowerPath.endsWith(".txt")) {
+        contentType = "text/plain";
+    } else if (lowerPath.endsWith(".ico")) {
+        contentType = "image/x-icon";
+    } else if (lowerPath.endsWith(".png")) {
+        contentType = "image/png";
+    } else if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) {
+        contentType = "image/jpeg";
+    } else if (lowerPath.endsWith(".gif")) {
+        contentType = "image/gif";
+    } else if (lowerPath.endsWith(".svg")) {
+        contentType = "image/svg+xml";
+    } else if (lowerPath.endsWith(".pdf")) {
+        contentType = "application/pdf";
+    }
+    
+    type = contentType;
+    
+    // For binary files, we need to handle them differently
+    // Store the file path for later use in send() method
+    body = ""; // Clear body for binary files
+    header("X-File-Path", path); // Store path in custom header for send() method
+    
+    file.close();
     return *this;
 }
 
@@ -91,7 +144,26 @@ Response& Response::download(const String& path, const String& name) {
 void Response::send() {
     if (!request) return;
     
-    AsyncWebServerResponse* response = request->beginResponse(statusCode, type, body);
+    AsyncWebServerResponse* response;
+    
+    // Check if this is a file response
+    if (headers.find("X-File-Path") != headers.end()) {
+        String filePath = headers["X-File-Path"];
+        
+        // Remove the custom header before sending
+        headers.erase("X-File-Path");
+        
+        // Serve file directly from SPIFFS
+        response = request->beginResponse(SPIFFS, filePath, type);
+        
+        if (!response) {
+            // Fallback if file serving fails
+            response = request->beginResponse(404, "text/plain", "File not found");
+        }
+    } else {
+        // Regular text/json response
+        response = request->beginResponse(statusCode, type, body);
+    }
     
     // Add custom headers
     for (const auto& pair : headers) {

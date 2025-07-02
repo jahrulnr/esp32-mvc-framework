@@ -4,17 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 MVC - Login</title>
+    <link rel="stylesheet" href="/assets/main.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -22,330 +14,156 @@
         }
         
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
+        }
+        
+        .login-form {
             text-align: center;
         }
         
-        .logo {
+        .login-form h1 {
+            color: var(--text-primary);
             margin-bottom: 30px;
-        }
-        
-        .logo h1 {
-            color: #4a5568;
             font-size: 2rem;
-            margin-bottom: 10px;
         }
         
-        .logo p {
-            color: #718096;
-            font-size: 0.9rem;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
+        .login-form .form-group {
             text-align: left;
         }
         
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #4a5568;
-            font-weight: 500;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .divider {
-            margin: 20px 0;
-            text-align: center;
-            position: relative;
-        }
-        
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e2e8f0;
-        }
-        
-        .divider span {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 0 15px;
-            color: #718096;
-            font-size: 0.9rem;
-        }
-        
-        .links {
+        .register-link {
+            margin-top: 20px;
             text-align: center;
         }
         
-        .links a {
-            color: #667eea;
+        .register-link a {
+            color: var(--primary-color);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s ease;
         }
         
-        .links a:hover {
-            color: #764ba2;
-        }
-        
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        
-        .alert-error {
-            background-color: #fed7d7;
-            color: #c53030;
-            border: 1px solid #feb2b2;
-        }
-        
-        .alert-success {
-            background-color: #c6f6d5;
-            color: #2f855a;
-            border: 1px solid #9ae6b4;
-        }
-        
-        .loading {
-            display: none;
-            margin-left: 10px;
-        }
-        
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .demo-credentials {
-            background: rgba(102, 126, 234, 0.1);
-            border: 1px solid rgba(102, 126, 234, 0.2);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            color: #4a5568;
-        }
-        
-        .demo-credentials h4 {
-            margin-bottom: 8px;
-            color: #667eea;
-        }
-        
-        .demo-credentials p {
-            margin: 4px 0;
-        }
-        
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 30px 20px;
-            }
-            
-            .logo h1 {
-                font-size: 1.7rem;
-            }
+        .register-link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
-    <div class="login-container">
-        <div class="logo">
+    <div class="login-container card">
+        <div class="login-form">
             <h1>ESP32 MVC</h1>
-            <p>Please sign in to continue</p>
-        </div>
-        
-        <div class="demo-credentials">
-            <h4>Demo Credentials:</h4>
-            <p><strong>Email:</strong> admin@example.com</p>
-            <p><strong>Password:</strong> password</p>
-            <p style="margin-top: 8px;"><em>or</em></p>
-            <p><strong>Email:</strong> user@example.com</p>
-            <p><strong>Password:</strong> 123456</p>
-        </div>
-        
-        <div id="alert" class="alert" style="display: none;"></div>
-        
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required 
-                       placeholder="Enter your email">
+            <p class="text-secondary mb-30">Please sign in to continue</p>
+            
+            <div class="demo-credentials card" style="margin-bottom: 20px; padding: 15px; font-size: 0.9rem;">
+                <h4 style="margin-bottom: 10px;">Demo Credentials:</h4>
+                <p><strong>Admin User:</strong></p>
+                <p>Email: admin@example.com | Password: password</p>
+                <p style="color: #48bb78; font-size: 0.8em;">Role: Administrator (can manage users)</p>
+                <p style="margin-top: 8px;"><strong>Regular User:</strong></p>
+                <p>Email: user@example.com | Password: 123456</p>
+                <p style="color: #4299e1; font-size: 0.8em;">Role: User (limited access)</p>
+                <button type="button" onclick="fillDemoCredentials('admin')" class="btn" style="background: #48bb78; margin-top: 8px; margin-right: 5px; padding: 6px 12px; font-size: 0.8rem;">Use Admin</button>
+                <button type="button" onclick="fillDemoCredentials('user')" class="btn" style="background: #4299e1; margin-top: 8px; padding: 6px 12px; font-size: 0.8rem;">Use User</button>
             </div>
             
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required 
-                       placeholder="Enter your password">
-            </div>
+            <div id="alert" class="alert" style="display: none;"></div>
             
-            <button type="submit" class="btn" id="loginBtn">
-                Sign In
-                <span class="loading" id="loading">
-                    <div class="spinner"></div>
-                </span>
-            </button>
-        </form>
-        
-        <div class="divider">
-            <span>Don't have an account?</span>
-        </div>
-        
-        <div class="links">
-            <a href="/register">Create Account</a> |
-            <a href="/">Back to Home</a>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="btn" id="loginBtn" style="width: 100%; margin-bottom: 20px;">
+                    Sign In
+                    <span class="loading-spinner" id="loading" style="display: none;"></span>
+                </button>
+            </form>
+            
+            <div class="register-link">
+                <p class="text-secondary">Don't have an account? <a href="/register">Create Account</a></p>
+                <p class="text-secondary"><a href="/">Back to Home</a></p>
+            </div>
         </div>
     </div>
 
+    <script src="/assets/main.js"></script>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const loading = document.getElementById('loading');
-            const alert = document.getElementById('alert');
-            
-            // Show loading state
-            loginBtn.disabled = true;
-            loading.style.display = 'inline-block';
-            alert.style.display = 'none';
-            
-            try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        email: email,
-                        password: password,
-                        redirect: new URLSearchParams(window.location.search).get('redirect') || '/dashboard'
-                    })
-                });
+        ready(() => {
+            // Wait a bit to ensure ESP32MVC is fully loaded
+            setTimeout(() => {
+                console.log('ESP32MVC object:', window.ESP32MVC);
+                console.log('setupForm method:', window.ESP32MVC.setupForm);
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Store token in localStorage
-                    localStorage.setItem('auth_token', data.token);
-                    localStorage.setItem('user_email', data.user.email);
-                    localStorage.setItem('user_name', data.user.name);
-                    
-                    // Show success message
-                    showAlert('Login successful! Redirecting...', 'success');
-                    
-                    // Redirect after a short delay
-                    setTimeout(() => {
-                        window.location.href = data.redirect;
-                    }, 1000);
+                // Setup login form using the ESP32MVC framework
+                if (window.ESP32MVC && window.ESP32MVC.setupForm) {
+                    window.ESP32MVC.setupForm('loginForm', async (data) => {
+                        const loginBtn = document.getElementById('loginBtn');
+                        const loading = document.getElementById('loading');
+                        
+                        loginBtn.disabled = true;
+                        loading.style.display = 'inline-block';
+                        
+                        try {
+                            const result = await window.ESP32MVC.login(data.email, data.password);
+                            showAlert('Login successful! Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = result.redirect || '/dashboard';
+                            }, 1000);
+                        } catch (error) {
+                            showAlert(error.message, 'error');
+                        } finally {
+                            loginBtn.disabled = false;
+                            loading.style.display = 'none';
+                        }
+                    });
                 } else {
-                    showAlert(data.message, 'error');
+                    console.error('ESP32MVC.setupForm is not available');
+                    // Fallback to traditional form handling
+                    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
+                        const loginBtn = document.getElementById('loginBtn');
+                        const loading = document.getElementById('loading');
+                        
+                        loginBtn.disabled = true;
+                        loading.style.display = 'inline-block';
+                        
+                        try {
+                            const result = await window.ESP32MVC.login(email, password);
+                            showAlert('Login successful! Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = result.redirect || '/dashboard';
+                            }, 1000);
+                        } catch (error) {
+                            showAlert(error.message, 'error');
+                        } finally {
+                            loginBtn.disabled = false;
+                            loading.style.display = 'none';
+                        }
+                    });
                 }
-            } catch (error) {
-                showAlert('Network error. Please try again.', 'error');
-                console.error('Login error:', error);
-            } finally {
-                // Hide loading state
-                loginBtn.disabled = false;
-                loading.style.display = 'none';
-            }
-        });
-        
-        function showAlert(message, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
-        }
-        
-        // Check if user is already logged in
-        window.addEventListener('load', function() {
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                // Verify token is still valid
-                fetch('/dashboard', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
+                
+                // Fill demo credentials functions
+                window.fillDemoCredentials = function(type) {
+                    if (type === 'admin') {
+                        document.getElementById('email').value = 'admin@example.com';
+                        document.getElementById('password').value = 'password';
+                    } else if (type === 'user') {
+                        document.getElementById('email').value = 'user@example.com';
+                        document.getElementById('password').value = '123456';
                     }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.href = '/dashboard';
-                    }
-                })
-                .catch(error => {
-                    // Token invalid, clear storage
-                    localStorage.clear();
-                });
-            }
-        });
-        
-        // Fill demo credentials on click
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.demo-credentials')) {
-                document.getElementById('email').value = 'admin@example.com';
-                document.getElementById('password').value = 'password';
-            }
+                };
+            }, 100);
         });
     </script>
 </body>

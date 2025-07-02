@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <SPIFFS.h>
+#include <memory>
 
 Application* Application::instance = nullptr;
 

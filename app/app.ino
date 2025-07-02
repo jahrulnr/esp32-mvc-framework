@@ -3,7 +3,7 @@
 #include "Framework/Core/Application.h"
 #include "Framework/Database/CsvDatabase.h"
 #include "Framework/Database/Model.h"
-#include "routes.h"
+#include "Routes/routes.h"
 
 // WiFi credentials
 const char* ssid = "ANDROID AP";
@@ -13,6 +13,10 @@ Application* app;
 CsvDatabase* database;
 
 void setup() {
+		#ifdef BOARD_HAS_PSRAM
+  	heap_caps_malloc_extmem_enable(4096);
+		#endif
+
     Serial.begin(115200);
     Serial.println("Starting ESP32 MVC Application...");
     
@@ -38,13 +42,23 @@ void setup() {
         std::vector<String> columns = {"name", "email", "password", "active", "role", "created_at", "updated_at"};
         database->createTable("users", columns);
         
-        // Insert demo users
+        // Insert demo users with role-based access
+        std::map<String, String> systemUser;
+        systemUser["name"] = "System User";
+        systemUser["email"] = "system@example.com";
+        systemUser["password"] = "system123";
+        systemUser["active"] = "1";
+        systemUser["role"] = "0"; // System role
+        systemUser["created_at"] = "2025-07-03 09:00:00";
+        systemUser["updated_at"] = "2025-07-03 09:00:00";
+        database->insert("users", systemUser);
+        
         std::map<String, String> adminUser;
         adminUser["name"] = "Admin User";
         adminUser["email"] = "admin@example.com";
         adminUser["password"] = "password";
         adminUser["active"] = "1";
-        adminUser["role"] = "admin";
+        adminUser["role"] = "1"; // Admin role
         adminUser["created_at"] = "2025-07-03 10:00:00";
         adminUser["updated_at"] = "2025-07-03 10:00:00";
         database->insert("users", adminUser);
@@ -54,6 +68,7 @@ void setup() {
         regularUser["email"] = "user@example.com";
         regularUser["password"] = "123456";
         regularUser["active"] = "1";
+        regularUser["role"] = "2"; // User role
         regularUser["role"] = "user";
         regularUser["created_at"] = "2025-07-03 10:01:00";
         regularUser["updated_at"] = "2025-07-03 10:01:00";
@@ -88,6 +103,7 @@ void setup() {
     Serial.println("- GET  /register      (Registration page)");
     Serial.println("- POST /register      (Process registration)");
     Serial.println("- GET  /dashboard     (Dashboard - requires auth)");
+    Serial.println("- GET  /users         (User Management - admin/system only)");
     Serial.println("- GET  /csv-demo      (CSV Database Demo)");
     Serial.println("- POST /logout        (Logout)");
     Serial.println("API Routes:");
@@ -101,12 +117,24 @@ void setup() {
     Serial.println("- GET  /api/v1/health (API: Health check)");
     Serial.println("- GET  /api/v1/version (API: Version info)");
     Serial.println("- GET  /api/v1/users  (API: Users from CSV database)");
+    Serial.println("User Management API Routes (Role-based):");
+    Serial.println("- GET  /api/v1/admin/users     (List users - admin/system)");
+    Serial.println("- GET  /api/v1/admin/users/{id} (Show user - admin/system)");
+    Serial.println("- POST /api/v1/admin/users     (Create user - admin/system)");
+    Serial.println("- PUT  /api/v1/admin/users/{id} (Update user - admin/system)");
+    Serial.println("- DELETE /api/v1/admin/users/{id} (Delete user - admin/system)");
     Serial.println("");
-    Serial.println("Database: CSV files stored in SPIFFS (/database/)");
+    Serial.println("Database: CSV files stored in SPIFFS (/data/database/)");
+    Serial.println("Role-based Access Control:");
+    Serial.println("- Role 0 (System): Full access to all users and system");
+    Serial.println("- Role 1 (Admin): Can manage regular users (role 2)");
+    Serial.println("- Role 2 (User): Limited access to own profile only");
+    Serial.println("");
     Serial.println("Authentication:");
-    Serial.println("Demo credentials - admin@example.com:password");
-    Serial.println("                 - user@example.com:123456");
-    Serial.println("(User data loaded from CSV database)");
+    Serial.println("Demo credentials - system@example.com:system123 (System)");
+    Serial.println("                 - admin@example.com:password (Admin)");
+    Serial.println("                 - user@example.com:123456 (User)");
+    Serial.println("(User data loaded from CSV database with role-based permissions)");
 }
 
 void loop() {

@@ -28,7 +28,7 @@ Response AuthMiddleware::handle(Request& request, std::function<Response(Request
     String authToken = token.substring(7); // Remove "Bearer " prefix
     
     // Simple token validation - in production use proper JWT verification
-    if (!authToken.startsWith("demo_token_") || authToken.length() < 20) {
+    if (!authToken.startsWith("cozmo_token_") || authToken.length() < 20) {
         if (!request.wantsJson()) {
             return Response(request.getServerRequest())
                 .redirect("/login?redirect=" + request.path());

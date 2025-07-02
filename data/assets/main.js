@@ -1,4 +1,23 @@
 // ESP32 MVC Framework - Main JavaScript
+// 
+// API Endpoints (all under /api/v1):
+// - GET  /api/v1/auth/user          - Get current user info
+// - GET  /api/v1/status             - System status
+// - GET  /api/v1/health             - Health check
+// - GET  /api/v1/version            - Version info
+// - GET  /api/v1/users              - List all users (CSV demo)
+// - GET  /api/v1/items              - List items
+// - POST /api/v1/items              - Create item
+// - GET  /api/v1/items/{id}         - Get specific item
+// - PUT  /api/v1/items/{id}         - Update item
+// - DEL  /api/v1/items/{id}         - Delete item
+// - GET  /api/v1/admin/users        - List users (admin)
+// - POST /api/v1/admin/users        - Create user (admin)
+// - GET  /api/v1/admin/users/{id}   - Get user (admin)
+// - PUT  /api/v1/admin/users/{id}   - Update user (admin)
+// - DEL  /api/v1/admin/users/{id}   - Delete user (admin)
+// - GET  /api/v1/dashboard          - Dashboard data
+// - POST /api/v1/restart            - Restart system
 
 class ESP32MVC {
     constructor() {
@@ -22,10 +41,11 @@ class ESP32MVC {
     setupTokenInterceptor() {
         // Store original fetch
         const originalFetch = window.fetch;
+        const self = this; // Store reference to this
         
         // Override fetch to automatically add auth token
         window.fetch = (...args) => {
-            const [url, config] = args;
+            let [url, config] = args;
             
             // Only add token for our API calls
             if (url.startsWith('/api') || url.startsWith('/dashboard')) {
@@ -41,7 +61,7 @@ class ESP32MVC {
                 .then(response => {
                     // Handle unauthorized responses
                     if (response.status === 401 && !url.includes('/login')) {
-                        this.logout();
+                        self.logout(); // Use stored reference
                     }
                     return response;
                 });
@@ -70,7 +90,16 @@ class ESP32MVC {
     
     async verifyToken() {
         try {
-            const response = await fetch('/api/v1/status');
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                return false;
+            }
+            
+            const response = await fetch('/api/v1/auth/user', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             return response.ok;
         } catch (error) {
             return false;
@@ -86,14 +115,26 @@ class ESP32MVC {
             }
         };
         
+        // Don't override Content-Type if it's already set (e.g., for form data)
         const mergedOptions = { ...defaultOptions, ...options };
+        if (options.headers && options.headers['Content-Type']) {
+            mergedOptions.headers = { ...defaultOptions.headers, ...options.headers };
+        }
         
         try {
             const response = await fetch(url, mergedOptions);
-            const data = await response.json();
+            
+            // Handle different response types
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                data = await response.text();
+            }
             
             if (!response.ok) {
-                throw new Error(data.message || 'API call failed');
+                throw new Error(data.message || data || 'API call failed');
             }
             
             return data;
@@ -258,17 +299,104 @@ class ESP32MVC {
         
         return intervalId;
     }
+    
+    // UI utility methods
+    showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+    
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    toggleElement(elementId, show = null) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            if (show === null) {
+                element.style.display = element.style.display === 'none' ? 'block' : 'none';
+            } else {
+                element.style.display = show ? 'block' : 'none';
+            }
+        }
+    }
+    
+    setElementText(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = text;
+        }
+    }
+    
+    setElementHTML(elementId, html) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = html;
+        }
+    }
+    
+    // Navigation helpers
+    redirectToLogin() {
+        window.location.href = '/login';
+    }
+    
+    redirectToDashboard() {
+        window.location.href = '/dashboard';
+    }
 }
 
 // Initialize framework
 const esp32mvc = new ESP32MVC();
 
-// Export for global use
-window.ESP32MVC = esp32mvc;
+// Export for global use - ensure all methods are accessible
+window.ESP32MVC = {
+    // Core methods
+    apiCall: (endpoint, options) => esp32mvc.apiCall(endpoint, options),
+    login: (email, password) => esp32mvc.login(email, password),
+    logout: () => esp32mvc.logout(),
+    showAlert: (message, type, duration) => esp32mvc.showAlert(message, type, duration),
+    setupForm: (formId, onSubmit) => esp32mvc.setupForm(formId, onSubmit),
+    startAutoUpdate: (callback, interval) => esp32mvc.startAutoUpdate(callback, interval),
+    verifyToken: () => esp32mvc.verifyToken(),
+    checkAuthentication: () => esp32mvc.checkAuthentication(),
+    
+    // Utility methods
+    formatBytes: (bytes) => esp32mvc.formatBytes(bytes),
+    formatUptime: (milliseconds) => esp32mvc.formatUptime(milliseconds),
+    debounce: (func, wait) => esp32mvc.debounce(func, wait),
+    showModal: (modalId) => esp32mvc.showModal(modalId),
+    hideModal: (modalId) => esp32mvc.hideModal(modalId),
+    toggleElement: (elementId, show) => esp32mvc.toggleElement(elementId, show),
+    setElementText: (elementId, text) => esp32mvc.setElementText(elementId, text),
+    setElementHTML: (elementId, html) => esp32mvc.setElementHTML(elementId, html),
+    
+    // Properties
+    apiBase: esp32mvc.apiBase,
+    token: esp32mvc.token
+};
+
+// Debug: Log available methods
+console.log('ESP32MVC methods:', Object.keys(window.ESP32MVC));
 
 // Helper functions
 window.showAlert = (message, type, duration) => esp32mvc.showAlert(message, type, duration);
 window.apiCall = (endpoint, options) => esp32mvc.apiCall(endpoint, options);
+window.logout = () => esp32mvc.logout();
+window.setupForm = (formId, onSubmit) => esp32mvc.setupForm(formId, onSubmit);
+window.startAutoUpdate = (callback, interval) => esp32mvc.startAutoUpdate(callback, interval);
+window.formatBytes = (bytes) => esp32mvc.formatBytes(bytes);
+window.formatUptime = (milliseconds) => esp32mvc.formatUptime(milliseconds);
+window.debounce = (func, wait) => esp32mvc.debounce(func, wait);
+window.showModal = (modalId) => esp32mvc.showModal(modalId);
+window.hideModal = (modalId) => esp32mvc.hideModal(modalId);
+window.toggleElement = (elementId, show) => esp32mvc.toggleElement(elementId, show);
+window.setElementText = (elementId, text) => esp32mvc.setElementText(elementId, text);
+window.setElementHTML = (elementId, html) => esp32mvc.setElementHTML(elementId, html);
 
 // DOM ready helper
 function ready(fn) {

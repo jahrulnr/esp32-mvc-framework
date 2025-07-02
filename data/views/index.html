@@ -4,19 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 MVC - Home</title>
+    <link rel="stylesheet" href="/assets/main.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
+        /* Page-specific styles */
         
         .container {
             max-width: 1200px;
@@ -162,11 +152,19 @@
         </div>
         
         <div class="nav">
+            <div id="authStatus" style="margin-bottom: 15px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; display: none;">
+                <span id="welcomeMessage">Welcome back, <strong id="currentUserName"></strong>!</span>
+                <span id="currentUserRole" style="margin-left: 10px; padding: 4px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold;"></span>
+            </div>
             <a href="/">Home</a>
             <a href="/about">About</a>
             <a href="/contact">Contact</a>
-            <a href="/login">Login</a>
-            <a href="/register">Register</a>
+            <a href="/login" id="loginLink">Login</a>
+            <a href="/register" id="registerLink">Register</a>
+            <a href="/dashboard" id="dashboardLink" style="display: none;">Dashboard</a>
+            <a href="/users" id="userMgmtLink" style="display: none;">User Management</a>
+            <a href="/csv-demo">CSV Demo</a>
+            <a href="#" onclick="logout()" id="logoutLink" style="display: none; background: #e53e3e;">Logout</a>
         </div>
         
         <div class="features">
@@ -218,32 +216,85 @@
         </div>
     </div>
 
+    <script src="/assets/main.js"></script>
     <script>
-        // Update system stats
-        function updateStats() {
-            fetch('/api/v1/status')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('uptime').textContent = 
-                        Math.floor(data.uptime / 1000) + 's';
-                    document.getElementById('memory').textContent = 
-                        Math.floor(data.free_heap / 1024) + 'KB';
-                })
-                .catch(error => {
-                    console.log('Stats update failed:', error);
-                });
+        // Check authentication status
+        async function checkAuthStatus() {
+            const token = localStorage.getItem('auth_token');
+            const userName = localStorage.getItem('user_name');
+            
+            if (token && userName) {
+                // User is logged in
+                document.getElementById('authStatus').style.display = 'block';
+                document.getElementById('currentUserName').textContent = userName;
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                document.getElementById('dashboardLink').style.display = 'inline-block';
+                document.getElementById('logoutLink').style.display = 'inline-block';
+                
+                // Get user role and show appropriate links
+                await getUserRole();
+            }
         }
         
-        // Update stats every 5 seconds
-        updateStats();
-        setInterval(updateStats, 5000);
+        async function getUserRole() {
+            try {
+                const userData = await apiCall('/api/v1/auth/user');
+                const userRole = parseInt(userData.user.role);
+                
+                // Update role display
+                const roleElement = document.getElementById('currentUserRole');
+                const roles = {
+                    0: { name: 'SYSTEM', style: 'background: #f56565; color: white;' },
+                    1: { name: 'ADMIN', style: 'background: #48bb78; color: white;' },
+                    2: { name: 'USER', style: 'background: #4299e1; color: white;' }
+                };
+                
+                const roleInfo = roles[userRole] || roles[2];
+                roleElement.textContent = roleInfo.name;
+                roleElement.setAttribute('style', roleElement.getAttribute('style') + roleInfo.style);
+                
+                // Show user management link for admins and system users
+                if (userRole <= 1) {
+                    document.getElementById('userMgmtLink').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Failed to get user role:', error);
+            }
+        }
         
-        // Add smooth scrolling
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.ESP32MVC.logout();
+            }
+        }
+        
+        // Update system stats
+        async function updateStats() {
+            try {
+                const data = await apiCall('/api/v1/status');
+                document.getElementById('uptime').textContent = 
+                    Math.floor(data.uptime / 1000) + 's';
+                document.getElementById('memory').textContent = 
+                    Math.floor(data.free_heap / 1024) + 'KB';
+            } catch (error) {
+                console.log('Stats update failed:', error);
+            }
+        }
+        
+        // Initialize page
+        ready(() => {
+            checkAuthStatus();
+            updateStats();
+            setInterval(updateStats, 5000);
+            
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 });
             });
         });

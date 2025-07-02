@@ -23,6 +23,13 @@ public:
     // POST /register - Process registration
     Response signup(Request& request);
     
+    // Static helper methods for other controllers
+    static String getCurrentUserEmail(Request& request);
+    static class User* getCurrentUser(Request& request);
+    
+    // API method for getting current user info
+    Response getUserInfo(Request& request);
+    
 private:
     bool validateCredentials(const String& email, const String& password);
     String generateToken(const String& email);

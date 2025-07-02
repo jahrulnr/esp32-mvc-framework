@@ -4,20 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 MVC - CSV Database Demo</title>
+    <link rel="stylesheet" href="/assets/main.css">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-        
+        /* CSV demo specific styles */
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
@@ -140,9 +130,14 @@
     <div class="container">
         <div class="nav-links">
             <a href="/">Home</a>
-            <a href="/login">Login</a>
-            <a href="/register">Register</a>
-            <a href="/dashboard">Dashboard</a>
+            <a href="/login" id="loginLink">Login</a>
+            <a href="/register" id="registerLink">Register</a>
+            <a href="/dashboard" id="dashboardLink" style="display: none;">Dashboard</a>
+            <a href="/users" id="userMgmtLink" style="display: none;">User Management</a>
+            <div id="authInfo" style="display: none; color: #667eea; font-weight: bold;">
+                Logged in as: <span id="currentUser"></span> 
+                <span id="currentRole" style="padding: 2px 6px; border-radius: 8px; font-size: 0.8em; margin-left: 5px;"></span>
+            </div>
         </div>
         
         <h1>CSV Database Demo</h1>
@@ -170,6 +165,7 @@
         </div>
     </div>
 
+    <script src="/assets/main.js"></script>
     <script>
         async function loadUsers() {
             const display = document.getElementById('usersDisplay');
@@ -178,8 +174,7 @@
             display.innerHTML = '<div class="loading">Loading users from CSV database...</div>';
             
             try {
-                const response = await fetch('/api/v1/users');
-                const data = await response.json();
+                const data = await apiCall('/api/v1/users');
                 
                 jsonOutput.textContent = JSON.stringify(data, null, 2);
                 
@@ -237,9 +232,7 @@
             jsonOutput.textContent = 'Loading...';
             
             try {
-                const response = await fetch('/api/v1/users');
-                const data = await response.json();
-                
+                const data = await apiCall('/api/v1/users');
                 jsonOutput.textContent = JSON.stringify(data, null, 2);
             } catch (error) {
                 jsonOutput.textContent = 'Error: ' + error.message;
@@ -252,28 +245,12 @@
             jsonOutput.textContent = 'Testing login with admin@example.com...';
             
             try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        email: 'admin@example.com',
-                        password: 'password'
-                    })
-                });
-                
-                const data = await response.json();
-                jsonOutput.textContent = JSON.stringify(data, null, 2);
-                
-                if (data.success) {
-                    alert('Login successful! User data loaded from CSV database.');
-                } else {
-                    alert('Login failed: ' + data.message);
-                }
+                const result = await window.ESP32MVC.login('admin@example.com', 'password');
+                jsonOutput.textContent = JSON.stringify(result, null, 2);
+                showAlert('Login successful! User data loaded from CSV database.', 'success');
             } catch (error) {
                 jsonOutput.textContent = 'Error: ' + error.message;
-                alert('Error testing login: ' + error.message);
+                showAlert('Error testing login: ' + error.message, 'error');
             }
         }
         
@@ -283,9 +260,51 @@
         }
         
         // Auto-load users when page loads
-        window.addEventListener('load', function() {
+        ready(() => {
+            checkAuthStatus();
             setTimeout(loadUsers, 1000);
         });
+        
+        async function checkAuthStatus() {
+            const token = localStorage.getItem('auth_token');
+            const userName = localStorage.getItem('user_name');
+            
+            if (token && userName) {
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                document.getElementById('dashboardLink').style.display = 'inline-block';
+                document.getElementById('authInfo').style.display = 'inline-block';
+                document.getElementById('currentUser').textContent = userName;
+                
+                // Get user role
+                await getUserRole();
+            }
+        }
+        
+        async function getUserRole() {
+            try {
+                const userData = await apiCall('/api/v1/auth/user');
+                const userRole = parseInt(userData.user.role);
+                
+                const roleElement = document.getElementById('currentRole');
+                const roles = {
+                    0: { name: 'SYSTEM', style: 'background: #f56565; color: white;' },
+                    1: { name: 'ADMIN', style: 'background: #48bb78; color: white;' },
+                    2: { name: 'USER', style: 'background: #4299e1; color: white;' }
+                };
+                
+                const roleInfo = roles[userRole] || roles[2];
+                roleElement.textContent = roleInfo.name;
+                roleElement.setAttribute('style', roleInfo.style);
+                
+                // Show user management link for admins and system users
+                if (userRole <= 1) {
+                    document.getElementById('userMgmtLink').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Failed to get user role:', error);
+            }
+        }
     </script>
 </body>
 </html>
