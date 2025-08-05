@@ -1,5 +1,4 @@
 #include "Controller.h"
-#include "../View/View.h"
 
 Response Controller::view(AsyncWebServerRequest* request, const String& template_name, const JsonDocument& data) {
     // TODO: Implement proper view rendering

@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include "Framework/Core/Application.h"
-#include "Framework/Database/CsvDatabase.h"
-#include "Framework/Database/Model.h"
+#include <MVCFramework.h>
 #include "Routes/routes.h"
 
 // WiFi credentials
@@ -69,7 +67,6 @@ void setup() {
         regularUser["password"] = "123456";
         regularUser["active"] = "1";
         regularUser["role"] = "2"; // User role
-        regularUser["role"] = "user";
         regularUser["created_at"] = "2025-07-03 10:01:00";
         regularUser["updated_at"] = "2025-07-03 10:01:00";
         database->insert("users", regularUser);

@@ -1,8 +1,0 @@
-{
-	"files.associations": {
-		"*.twig": "twig",
-		"*.vcl": "bat",
-		"*.cf": "properties",
-		"streambuf": "cpp"
-	}
-}

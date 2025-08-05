@@ -1,7 +1,7 @@
 #ifndef API_CONTROLLER_H
 #define API_CONTROLLER_H
 
-#include "../Framework/Http/Controller.h"
+#include <MVCFramework.h>
 
 class ApiController : public ResourceController {
 public:

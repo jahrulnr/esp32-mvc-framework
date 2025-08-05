@@ -1,7 +1,7 @@
 #ifndef USER_CONTROLLER_H
 #define USER_CONTROLLER_H
 
-#include "../Framework/Http/Controller.h"
+#include <MVCFramework.h>
 #include "../Models/User.h"
 
 class UserController : public Controller {

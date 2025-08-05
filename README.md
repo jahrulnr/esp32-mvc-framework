@@ -75,12 +75,6 @@ A Laravel-inspired MVC framework for ESP32 microcontrollers with authentication,
 
 ```
 app/
-├── Framework/           # Core framework files
-│   ├── Core/           # Application core (Application, Config, ServiceContainer)
-│   ├── Http/           # HTTP components (Request, Response, Controller, Middleware)
-│   ├── Routing/        # Router implementation with pattern matching
-│   ├── Database/       # Model base classes and CSV database
-│   └── View/           # View rendering system
 ├── Controllers/        # Application controllers
 │   ├── HomeController.h/.cpp      # Home page controller
 │   ├── AuthController.h/.cpp      # Authentication controller

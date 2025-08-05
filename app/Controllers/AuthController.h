@@ -1,7 +1,7 @@
 #ifndef AUTH_CONTROLLER_H
 #define AUTH_CONTROLLER_H
 
-#include "../Framework/Http/Controller.h"
+#include <MVCFramework.h>
 
 class AuthController : public Controller {
 public:

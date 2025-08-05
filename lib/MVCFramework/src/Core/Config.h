@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 #include <Arduino.h>
-#include <map>
 #include <ArduinoJson.h>
+#include <map>
 
 class Config {
 private:

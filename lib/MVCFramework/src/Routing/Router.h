@@ -6,9 +6,11 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "../Http/Request.h"
-#include "../Http/Response.h"
-#include "../Http/Middleware.h"
+
+// Forward declarations
+class Request;
+class Response;
+class Middleware;
 
 struct Route {
     String method;

@@ -1,7 +1,7 @@
 #ifndef HOME_CONTROLLER_H
 #define HOME_CONTROLLER_H
 
-#include "../Framework/Http/Controller.h"
+#include <MVCFramework.h>
 
 class HomeController : public Controller {
 public:

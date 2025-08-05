@@ -6,16 +6,18 @@
 #include <vector>
 #include <functional>
 #include <memory>
-#include "../Routing/Router.h"
-#include "ServiceContainer.h"
-#include "Config.h"
+
+// Forward declarations
+class Config;
+class ServiceContainer;
+class Router;
 
 class Application {
 private:
     static Application* instance;
-    std::unique_ptr<Router> router;
-    std::unique_ptr<ServiceContainer> container;
     std::unique_ptr<Config> config;
+    std::unique_ptr<ServiceContainer> container;
+    std::unique_ptr<Router> router;
     bool booted = false;
     
     Application() = default;
@@ -30,15 +32,12 @@ public:
     ServiceContainer* getContainer() { return container.get(); }
     Config* getConfig() { return config.get(); }
     
+    // Template methods - implementation in ApplicationTemplates.h
     template<typename T>
-    void bind(const String& name, std::function<T*()> factory) {
-        container->bind<T>(name, factory);
-    }
+    void bind(const String& name, std::function<T*()> factory);
     
     template<typename T>
-    T* resolve(const String& name) {
-        return container->resolve<T>(name);
-    }
+    T* resolve(const String& name);
     
     void registerProviders();
     void registerMiddleware();

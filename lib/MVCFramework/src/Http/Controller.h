@@ -3,8 +3,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "../Http/Request.h"
-#include "../Http/Response.h"
+#include <MVCFramework.h>
 
 class Controller {
 public:

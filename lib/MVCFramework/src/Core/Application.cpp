@@ -1,6 +1,12 @@
 #include "Application.h"
+#include "Config.h"
+#include "ServiceContainer.h"
+#include "../Routing/Router.h"
+#include "../Http/Request.h"
+#include "../Http/Response.h"
 #include <SPIFFS.h>
 #include <memory>
+#include <ArduinoJson.h>
 
 Application* Application::instance = nullptr;
 
@@ -73,11 +79,15 @@ void Application::registerProviders() {
 
 void Application::registerMiddleware() {
     // Register core middleware
-    router->registerMiddleware("cors", std::make_shared<CorsMiddleware>());
-    router->registerMiddleware("auth", std::make_shared<AuthMiddleware>());
-    router->registerMiddleware("logging", std::make_shared<LoggingMiddleware>());
-    router->registerMiddleware("json", std::make_shared<JsonMiddleware>());
-    router->registerMiddleware("ratelimit", std::make_shared<RateLimitMiddleware>());
+    // Note: These middleware classes need to be implemented
+    // router->registerMiddleware("cors", std::make_shared<CorsMiddleware>());
+    // router->registerMiddleware("auth", std::make_shared<AuthMiddleware>());
+    // router->registerMiddleware("logging", std::make_shared<LoggingMiddleware>());
+    // router->registerMiddleware("json", std::make_shared<JsonMiddleware>());
+    // router->registerMiddleware("ratelimit", std::make_shared<RateLimitMiddleware>());
+    
+    // For now, just register a basic middleware
+    Serial.println("Middleware registration placeholder - implement custom middleware classes as needed");
 }
 
 void Application::registerRoutes() {

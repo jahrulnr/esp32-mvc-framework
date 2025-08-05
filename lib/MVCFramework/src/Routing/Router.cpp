@@ -1,4 +1,7 @@
 #include "Router.h"
+#include "../Http/Request.h"
+#include "../Http/Response.h"
+#include "../Http/Middleware.h"
 #include <regex>
 
 Router::Router(AsyncWebServer* webServer) : server(webServer) {
