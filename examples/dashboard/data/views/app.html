@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 MVC Framework</title>
+
+    <link rel="stylesheet" href="/assets/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/app.css">
+    <style>
+        /* Camera View Enhancements */
+        .feature-badge {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 6px 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-badge:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .camera-placeholder {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .camera-container {
+            border-radius: 0 0 0.375rem 0.375rem;
+            overflow: hidden;
+        }
+        
+        .stats-card-enhanced {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stats-card-enhanced:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+        }
+        
+        .camera-stream-active {
+            border-radius: 0 0 0.375rem 0.375rem;
+        }
+        
+        /* Enhanced form controls */
+        .form-range::-webkit-slider-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .form-range::-moz-range-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Enhanced button and form styling */
+        .btn-enhanced {
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-control-enhanced {
+            border: 2px solid #e3f2fd;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-control-enhanced:focus {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            background: white;
+        }
+
+        .card-header-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+
+        .settings-icon {
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .badge-enhanced {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Loading Overlay -->
+    <div id="global-loading" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(255,255,255,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div class="spinner-border text-primary" role="status" style="width:3rem; height:3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-3 text-primary fw-bold">Please wait while resources are loading...</div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            document.getElementById('global-loading').style.display = 'none';
+        });
+        
+        // Show overlay immediately
+        document.getElementById('global-loading').style.display = 'flex';
+    </script>
+
+    <!-- Auth Container (Login) -->
+    <div id="auth-wrapper" class="auth-wrapper">
+        <div class="container">
+            <div class="auth-container">
+                <div class="logo">
+                    <h1>ESP32 MVC</h1>
+                    <p id="auth-subtitle" class="text-muted">Please sign in to continue</p>
+                </div>
+                
+                <div class="alert alert-danger" id="error-alert" role="alert"></div>
+                <div class="alert alert-success" id="success-alert" role="alert"></div>
+                
+                <!-- Login Form -->
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-auth">Sign In</button>
+                    </div>
+                    <input type="hidden" id="redirect" name="redirect" value="/dashboard">
+                </form>
+                
+                <div class="auth-link" id="login-link" style="display: none;">
+                    <p>Already have an account? <a href="#login">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="dashboard-wrapper" class="dashboard-wrapper">
+        <!-- Mobile menu toggle -->
+        <button class="navbar-toggler" type="button" id="sidebar-toggle">
+            ☰
+        </button>
+        
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar -->
+                <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar">
+                    <div class="position-sticky sidebar-sticky">
+                        <div class="px-3 py-4 d-flex justify-content-between align-items-center">
+                            <h5 class="text-white mb-0">ESP32 MVC</h5>
+                        </div>
+                        <hr class="text-white">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#dashboard" id="dashboard-link">
+                                    <span class="me-2">📊</span>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#camera" id="camera-link">
+                                    <span class="me-2">📷</span>Camera
+                                </a>
+                            </li>
+                            <li class="nav-item admin-only">
+                                <a class="nav-link" href="#servo" id="servo-link">
+                                    <span class="me-2">🔧</span>Servo Control
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#settings" id="settings-link">
+                                    <span class="me-2">⚙️</span>Settings
+                                </a>
+                            </li>
+                            <li class="nav-item admin-only">
+                                <a class="nav-link" href="#users" id="users-link">
+                                    <span class="me-2">👥</span>User Management
+                                </a>
+                            </li>
+                            <li class="nav-item admin-only">
+                                <a class="nav-link" href="#system" id="system-link">
+                                    <span class="me-2">🔧</span>System Control
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <hr class="text-white">
+                        <div class="px-3">
+                            <div class="text-white mb-2">
+                                <small>Signed in as:</small>
+                                <div id="user-name" class="fw-bold"></div>
+                                <div id="user-username" class="small"></div>
+                                <div id="user-role" class="small"></div>
+                            </div>
+                            <button id="logout-btn" class="btn btn-sm btn-outline-light mt-2 w-100">Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Main content -->
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content" id="main-content">
+                    <!-- Content will be loaded here via AJAX -->
+                    <div id="content-loader" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/bootstrap.bundle.js"></script>
+    
+    <!-- Template for Dashboard Section -->
+    <template id="dashboard-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Dashboard</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-btn">
+                    <span>↻</span>
+                    Refresh
+                </button>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow stats-card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Uptime</h5>
+                        <h2 class="card-text" id="uptime-value">--:--:--</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow stats-card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Free Memory</h5>
+                        <h2 class="card-text" id="memory-value">-- KB</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow stats-card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">IP Address</h5>
+                        <h2 class="card-text" id="ip-value">--.--.--.--</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Template for Camera Section -->
+    <template id="camera-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2 d-flex align-items-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-3 text-primary">
+                    <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1L21.05 10c.33-.17.33-.63 0-.8L19.43 8.2c-.25-.69-.55-1.35-.9-1.97L19.5 5c.24-.24.15-.67-.15-.85L17.85 3c-.21-.12-.47-.07-.64.1L15.5 4.57c-.69-.25-1.35-.55-1.97-.9L12.5 2c-.17-.33-.63-.33-.8 0L10.7 3.67c-.69.25-1.35.55-1.97.9L7.5 3.15c-.17-.17-.43-.22-.64-.1L5.35 4.15c-.3.18-.39.61-.15.85l.97 1.23c-.35.62-.65 1.28-.9 1.97L3.95 9.2c-.33.17-.33.63 0 .8L5.27 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97L3.95 14c-.33.17-.33.63 0 .8l1.32 1c.25.69.55 1.35.9 1.97L5.2 18.5c-.24.24-.15.67.15.85l1.5 1.15c.21.12.47.07.64-.1l1.71-1.42c.62.35 1.28.65 1.97.9l1 1.67c.17.33.63.33.8 0l1-1.67c.69-.25 1.35-.55 1.97-.9l1.71 1.42c.17.17.43.22.64.1l1.5-1.15c.3-.18.39-.61.15-.85l-.97-1.23c.35-.62.65-1.28.9-1.97L21.05 14c.33-.17.33-.63 0-.8L19.73 12.97z" fill="currentColor"/>
+                </svg>
+                Camera View
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group me-2" role="group">
+                    <button type="button" class="btn btn-outline-success d-flex align-items-center" id="camera-start-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M8 5v14l11-7z" fill="currentColor"/>
+                        </svg>
+                        Start Camera
+                    </button>
+                    <button type="button" class="btn btn-outline-danger d-flex align-items-center" id="camera-stop-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M6 6h12v12H6z" fill="currentColor"/>
+                        </svg>
+                        Stop Camera
+                    </button>
+                </div>
+                <button type="button" class="btn btn-outline-secondary d-flex align-items-center" id="camera-capture-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                        <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1L21.05 10c.33-.17.33-.63 0-.8L19.43 8.2c-.25-.69-.55-1.35-.9-1.97L19.5 5c.24-.24.15-.67-.15-.85L17.85 3c-.21-.12-.47-.07-.64.1L15.5 4.57c-.69-.25-1.35-.55-1.97-.9L12.5 2c-.17-.33-.63-.33-.8 0L10.7 3.67c-.69.25-1.35.55-1.97.9L7.5 3.15c-.17-.17-.43-.22-.64-.1L5.35 4.15c-.3.18-.39.61-.15.85l.97 1.23c-.35.62-.65 1.28-.9 1.97L3.95 9.2c-.33.17-.33.63 0 .8L5.27 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97L3.95 14c-.33.17-.33.63 0 .8l1.32 1c.25.69.55 1.35.9 1.97L5.2 18.5c-.24.24-.15.67.15.85l1.5 1.15c.21.12.47.07.64-.1l1.71-1.42c.62.35 1.28.65 1.97.9l1 1.67c.17.33.63.33.8 0l1-1.67c.69-.25 1.35-.55 1.97-.9l1.71 1.42c.17.17.43.22.64.1l1.5-1.15c.3-.18.39-.61.15-.85l-.97-1.23c.35-.62.65-1.28.9-1.97L21.05 14c.33-.17.33-.63 0-.8L19.73 12.97z" fill="currentColor"/>
+                    </svg>
+                    Capture Photo
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Camera Live View -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Live Stream</h5>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-secondary me-2" id="camera-status">Disconnected</span>
+                            <span class="badge bg-info" id="fps-counter">0 FPS</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="camera-container position-relative" style="min-height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <img id="camera-stream" class="w-100" style="max-height: 480px; object-fit: contain; background: #000; display: none;" alt="Camera Stream" />
+                            <div id="camera-overlay" class="position-absolute top-50 start-50 translate-middle text-white text-center w-100">
+                                <div class="spinner-border mb-3" role="status" id="camera-loading" style="display: none; width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div id="camera-message">
+                                    <div class="camera-placeholder mb-4">
+                                        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.6;">
+                                            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1L21.05 10c.33-.17.33-.63 0-.8L19.43 8.2c-.25-.69-.55-1.35-.9-1.97L19.5 5c.24-.24.15-.67-.15-.85L17.85 3c-.21-.12-.47-.07-.64.1L15.5 4.57c-.69-.25-1.35-.55-1.97-.9L12.5 2c-.17-.33-.63-.33-.8 0L10.7 3.67c-.69.25-1.35.55-1.97.9L7.5 3.15c-.17-.17-.43-.22-.64-.1L5.35 4.15c-.3.18-.39.61-.15.85l.97 1.23c-.35.62-.65 1.28-.9 1.97L3.95 9.2c-.33.17-.33.63 0 .8L5.27 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97L3.95 14c-.33.17-.33.63 0 .8l1.32 1c.25.69.55 1.35.9 1.97L5.2 18.5c-.24.24-.15.67.15.85l1.5 1.15c.21.12.47.07.64-.1l1.71-1.42c.62.35 1.28.65 1.97.9l1 1.67c.17.33.63.33.8 0l1-1.67c.69-.25 1.35-.55 1.97-.9l1.71 1.42c.17.17.43.22.64.1l1.5-1.15c.3-.18.39-.61.15-.85l-.97-1.23c.35-.62.65-1.28.9-1.97L21.05 14c.33-.17.33-.63 0-.8L19.73 12.97z" fill="white"/>
+                                        </svg>
+                                    </div>
+                                    <h4 class="mb-3" style="font-weight: 300; letter-spacing: 0.5px;">Camera Offline</h4>
+                                    <p class="mb-4" style="opacity: 0.8; font-size: 0.95rem;">Click "Start Camera" to begin live streaming</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <div class="feature-badge">
+                                            <small>🎥 Live Stream</small>
+                                        </div>
+                                        <div class="feature-badge">
+                                            <small>📸 HD Capture</small>
+                                        </div>
+                                        <div class="feature-badge">
+                                            <small>⚙️ Real-time Settings</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Camera Controls -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm stats-card-enhanced">
+                    <div class="card-header card-header-gradient d-flex align-items-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2 settings-icon">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/>
+                        </svg>
+                        <h5 class="mb-0">Camera Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="camera-settings-form">
+                            <div class="mb-4">
+                                <label for="camera-quality" class="form-label d-flex justify-content-between align-items-center">
+                                    <span>Quality</span>
+                                    <small class="text-muted">(0-63, lower = better)</small>
+                                </label>
+                                <input type="range" class="form-range" id="camera-quality" min="0" max="63" value="10">
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Best (0)</small>
+                                    <span id="quality-value" class="badge bg-primary px-3 py-2">10</span>
+                                    <small class="text-muted">Worst (63)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="camera-brightness" class="form-label d-flex justify-content-between align-items-center">
+                                    <span>Brightness</span>
+                                    <small class="text-muted">(-2 to 2)</small>
+                                </label>
+                                <input type="range" class="form-range" id="camera-brightness" min="-2" max="2" value="0">
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Dark (-2)</small>
+                                    <span id="brightness-value" class="badge bg-warning px-3 py-2">0</span>
+                                    <small class="text-muted">Bright (2)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="camera-contrast" class="form-label d-flex justify-content-between align-items-center">
+                                    <span>Contrast</span>
+                                    <small class="text-muted">(-2 to 2)</small>
+                                </label>
+                                <input type="range" class="form-range" id="camera-contrast" min="-2" max="2" value="0">
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Low (-2)</small>
+                                    <span id="contrast-value" class="badge bg-info px-3 py-2">0</span>
+                                    <small class="text-muted">High (2)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="camera-framesize" class="form-label">Frame Size</label>
+                                <select class="form-select form-control-enhanced" id="camera-framesize">
+                                    <option value="0">📱 96x96</option>
+                                    <option value="1">📱 QQVGA (160x120)</option>
+                                    <option value="2">📱 QCIF (176x144)</option>
+                                    <option value="3">📱 HQVGA (240x176)</option>
+                                    <option value="4">📱 240x240</option>
+                                    <option value="5" selected>💻 QVGA (320x240)</option>
+                                    <option value="6">💻 CIF (400x296)</option>
+                                    <option value="7">💻 HVGA (480x320)</option>
+                                    <option value="8">🖥️ VGA (640x480)</option>
+                                    <option value="9">🖥️ SVGA (800x600)</option>
+                                    <option value="10">🖥️ XGA (1024x768)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="apply-settings-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/>
+                                    </svg>
+                                    Apply Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Camera Statistics -->
+                <div class="card shadow-sm mt-3 stats-card-enhanced">
+                    <div class="card-header bg-info text-white d-flex align-items-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="white"/>
+                        </svg>
+                        <h5 class="mb-0">Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">🔗</span>
+                                    Connection
+                                </span>
+                                <span class="badge bg-secondary rounded-pill" id="connection-status">Disconnected</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">📊</span>
+                                    Frames Received
+                                </span>
+                                <span class="badge bg-primary rounded-pill" id="frames-received">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">📈</span>
+                                    Data Received
+                                </span>
+                                <span class="badge bg-success rounded-pill" id="data-received">0 KB</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">📏</span>
+                                    Last Frame Size
+                                </span>
+                                <span class="badge bg-warning rounded-pill" id="last-frame-size">0 KB</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Template for Servo Control Section -->
+    <template id="servo-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2 d-flex align-items-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-3 text-primary">
+                    <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                Servo Control
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group me-2" role="group">
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center" id="add-servo-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                        </svg>
+                        Add Servo
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-flex align-items-center" id="setup-pantilt-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm16 10H5V7h14v10zM8 9v6l5-3-5-3z" fill="currentColor"/>
+                        </svg>
+                        Quick Pan-Tilt Setup
+                    </button>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-success d-flex align-items-center" id="save-preset-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                            <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/>
+                        </svg>
+                        Save Preset
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Servo List and Controls -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Active Servos</h5>
+                        <span class="badge bg-light text-primary" id="servo-count">0 servos</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="servo-list" class="row g-3">
+                            <div class="col-12 text-center text-muted" id="no-servos-message">
+                                <div class="py-5">
+                                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.3;" class="mb-3">
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="currentColor"/>
+                                        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                                    </svg>
+                                    <h5>No Servos Configured</h5>
+                                    <p class="text-muted">Add a servo to get started with motor control</p>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('add-servo-btn').click()">
+                                        Add Your First Servo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bulk Controls Card -->
+                <div class="card shadow-sm mt-4" id="bulk-controls-card" style="display: none;">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Bulk Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="bulk-angle" class="form-label">Set All Servos to Angle:</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="bulk-angle" min="0" max="180" value="90">
+                                    <span class="input-group-text">°</span>
+                                    <button class="btn btn-outline-primary" type="button" id="set-all-btn">Set All</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Quick Actions:</label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="center-all-btn">Center All</button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" id="sweep-all-btn">Sweep All</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" id="disable-all-btn">Disable All</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Servo Management Panel -->
+            <div class="col-lg-4 mb-4">
+                <!-- Quick Stats -->
+                <div class="card shadow-sm stats-card-enhanced mb-4">
+                    <div class="card-header card-header-gradient d-flex align-items-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2 settings-icon">
+                            <path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" fill="white"/>
+                        </svg>
+                        <h5 class="mb-0">Servo Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled dashboard-stats mb-0">
+                            <li class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">⚙️</span>
+                                    Total Servos
+                                </span>
+                                <span class="badge bg-primary rounded-pill" id="total-servos">0</span>
+                            </li>
+                            <li class="d-flex justify-content-between align-items-center py-2 border-bottom border-light">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">🟢</span>
+                                    Active Servos
+                                </span>
+                                <span class="badge bg-success rounded-pill" id="active-servos">0</span>
+                            </li>
+                            <li class="d-flex justify-content-between align-items-center py-2">
+                                <span class="d-flex align-items-center">
+                                    <span class="me-2">💾</span>
+                                    Saved Presets
+                                </span>
+                                <span class="badge bg-info rounded-pill" id="saved-presets">0</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Preset Management -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Preset Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="preset-name" class="form-label">Preset Name:</label>
+                            <input type="text" class="form-control" id="preset-name" placeholder="Enter preset name">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-success" id="save-preset-btn-panel">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/>
+                                </svg>
+                                Save Current Positions
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="load-presets-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="me-2">
+                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" fill="currentColor"/>
+                                </svg>
+                                Load Preset
+                            </button>
+                        </div>
+                        
+                        <!-- Preset List -->
+                        <div class="mt-3" id="preset-list">
+                            <small class="text-muted">No presets saved yet</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Template for Settings Section -->
+    <template id="settings-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Settings</h1>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form id="settings-form">
+                    <div class="mb-3">
+                        <label for="username-display" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username-display" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role-display" class="form-label">Role</label>
+                        <input type="text" class="form-control" id="role-display" disabled>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="current-password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="current-password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new-password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm-new-password" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirm-new-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Template for User Management Section -->
+    <template id="users-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">User Management</h1>
+            <button class="btn btn-sm btn-outline-primary" id="add-user-btn">Add User</button>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- User rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Template for System Control Section -->
+    <template id="system-template">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">System Control</h1>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">System Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-warning" id="restart-btn">Restart Device</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">System Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                CPU Frequency
+                                <span class="badge bg-primary rounded-pill">240 MHz</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Flash Size
+                                <span class="badge bg-primary rounded-pill">4 MB</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                SDK Version
+                                <span class="badge bg-primary rounded-pill">ESP-IDF v4.4</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="/assets/app.js"></script>
+</body>
+</html>

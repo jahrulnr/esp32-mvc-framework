@@ -1,0 +1,15 @@
+{
+	"files.associations": {
+		"*.twig": "twig",
+		"*.vcl": "bat",
+		"*.cf": "properties",
+		"*.sh": "shellscript",
+		"chrono": "cpp",
+		"functional": "cpp",
+		"unordered_map": "cpp",
+		"istream": "cpp",
+		"numeric": "cpp",
+		"ostream": "cpp",
+		"sstream": "cpp"
+	}
+}
