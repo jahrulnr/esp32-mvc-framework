@@ -23,7 +23,7 @@ void Application::boot() {
     Serial.println("Booting ESP32 MVC Framework...");
     
     // Initialize core services
-    config = std::make_unique<Config>();
+    config = std::make_unique<Config>(_storageType);
     container = std::make_unique<ServiceContainer>();
     
     // Load configuration
