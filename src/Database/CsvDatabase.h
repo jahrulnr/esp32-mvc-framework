@@ -2,9 +2,11 @@
 #define CSV_DATABASE_H
 
 #include <Arduino.h>
-#include <SPIFFS.h>
 #include <vector>
 #include <map>
+#include <FS.h>
+#include <SPIFFS.h>
+#include <LittleFS.h>
 
 class CsvDatabase {
 private:
@@ -17,7 +19,7 @@ private:
     String buildCsvLine(const std::vector<String>& fields) const;
     
 public:
-    CsvDatabase();
+    CsvDatabase(fs::FS& storageType);
     
     // File operations
     bool tableExists(const String& tableName) const;
@@ -48,6 +50,7 @@ public:
     std::vector<String> getTables() const;
     
 private:
+    fs::FS& _storageType;
     String getTablePath(const String& tableName) const;
     String getBackupPath(const String& tableName) const;
     bool writeToFile(const String& filePath, const String& content) const;

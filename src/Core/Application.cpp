@@ -4,15 +4,15 @@
 #include "../Routing/Router.h"
 #include "../Http/Request.h"
 #include "../Http/Response.h"
-#include <SPIFFS.h>
 #include <memory>
 #include <ArduinoJson.h>
 
 Application* Application::instance = nullptr;
 
-Application* Application::getInstance() {
+Application* Application::getInstance(fs::FS& storageType) {
     if (instance == nullptr) {
         instance = new Application();
+        instance->_storageType = storageType;
     }
     return instance;
 }
@@ -21,12 +21,6 @@ void Application::boot() {
     if (booted) return;
     
     Serial.println("Booting ESP32 MVC Framework...");
-    
-    // Initialize SPIFFS for file storage
-    if (!SPIFFS.begin(true)) {
-        Serial.println("SPIFFS Mount Failed");
-        return;
-    }
     
     // Initialize core services
     config = std::make_unique<Config>();

@@ -2,6 +2,9 @@
 #define APPLICATION_H
 
 #include <Arduino.h>
+#include <FS.h>
+#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <map>
 #include <vector>
 #include <functional>
@@ -20,11 +23,12 @@ private:
     std::unique_ptr<Router> router;
     bool booted = false;
     const char* deviceName = "PioDevice-ESP32Cam";
+    fs::FS& _storageType = LittleFS;
     
     Application() = default;
 
 public:
-    static Application* getInstance();
+    static Application* getInstance(fs::FS& storageType = LittleFS);
     
     void boot();
     void run();

@@ -1,10 +1,10 @@
 #include "CsvDatabase.h"
 
-CsvDatabase::CsvDatabase() {
+CsvDatabase::CsvDatabase(fs::FS& storageType): _storageType(storageType) {
     // Ensure database directory exists
-    if (!SPIFFS.exists(basePath)) {
-        // Create directory structure (SPIFFS doesn't have mkdir, so we create a dummy file)
-        File file = SPIFFS.open(basePath + ".keep", "w");
+    if (!_storageType.exists(basePath)) {
+        // Create directory structure (_storageType doesn't have mkdir, so we create a dummy file)
+        File file = _storageType.open(basePath + ".keep", "w");
         if (file) {
             file.print("");
             file.close();
@@ -94,7 +94,7 @@ String CsvDatabase::buildCsvLine(const std::vector<String>& fields) const {
 }
 
 bool CsvDatabase::tableExists(const String& tableName) const {
-    return SPIFFS.exists(getTablePath(tableName));
+    return _storageType.exists(getTablePath(tableName).c_str());
 }
 
 bool CsvDatabase::createTable(const String& tableName, const std::vector<String>& columns) {
@@ -121,7 +121,7 @@ bool CsvDatabase::dropTable(const String& tableName) {
         return false;
     }
     
-    return SPIFFS.remove(getTablePath(tableName));
+    return _storageType.remove(getTablePath(tableName));
 }
 
 std::vector<String> CsvDatabase::getTableColumns(const String& tableName) const {
@@ -131,7 +131,7 @@ std::vector<String> CsvDatabase::getTableColumns(const String& tableName) const 
         return columns;
     }
     
-    File file = SPIFFS.open(getTablePath(tableName), "r");
+    File file = _storageType.open(getTablePath(tableName), "r");
     if (!file) {
         return columns;
     }
@@ -155,7 +155,7 @@ std::vector<std::map<String, String>> CsvDatabase::select(const String& tableNam
         return results;
     }
     
-    File file = SPIFFS.open(getTablePath(tableName), "r");
+    File file = _storageType.open(getTablePath(tableName), "r");
     if (!file) {
         return results;
     }
@@ -238,7 +238,7 @@ bool CsvDatabase::insert(const String& tableName, const std::map<String, String>
     }
     
     // Append to file
-    File file = SPIFFS.open(getTablePath(tableName), "a");
+    File file = _storageType.open(getTablePath(tableName), "a");
     if (!file) {
         return false;
     }
@@ -365,7 +365,7 @@ int CsvDatabase::count(const String& tableName, const std::map<String, String>& 
 std::vector<String> CsvDatabase::getTables() const {
     std::vector<String> tables;
     
-    File root = SPIFFS.open(basePath);
+    File root = _storageType.open(basePath);
     if (!root || !root.isDirectory()) {
         return tables;
     }
@@ -396,7 +396,7 @@ bool CsvDatabase::backup(const String& tableName) const {
 
 bool CsvDatabase::restore(const String& tableName) const {
     String backupPath = getBackupPath(tableName);
-    if (!SPIFFS.exists(backupPath)) {
+    if (!_storageType.exists(backupPath)) {
         return false;
     }
     
@@ -405,7 +405,7 @@ bool CsvDatabase::restore(const String& tableName) const {
 }
 
 bool CsvDatabase::writeToFile(const String& filePath, const String& content) const {
-    File file = SPIFFS.open(filePath, "w");
+    File file = _storageType.open(filePath, "w");
     if (!file) {
         return false;
     }
@@ -416,7 +416,7 @@ bool CsvDatabase::writeToFile(const String& filePath, const String& content) con
 }
 
 String CsvDatabase::readFromFile(const String& filePath) const {
-    File file = SPIFFS.open(filePath, "r");
+    File file = _storageType.open(filePath, "r");
     if (!file) {
         return "";
     }
@@ -429,7 +429,7 @@ String CsvDatabase::readFromFile(const String& filePath) const {
 std::vector<String> CsvDatabase::readLines(const String& filePath) const {
     std::vector<String> lines;
     
-    File file = SPIFFS.open(filePath, "r");
+    File file = _storageType.open(filePath, "r");
     if (!file) {
         return lines;
     }
