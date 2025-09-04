@@ -1,8 +1,7 @@
 #include "Response.h"
-#include <SPIFFS.h>
 
-Response::Response(AsyncWebServerRequest* req) 
-    : request(req), statusCode(200), type("text/html"), 
+Response::Response(AsyncWebServerRequest* req, FS& storageType) 
+    : storage(storageType), request(req), statusCode(200), type("text/html"), 
       binaryData(nullptr), binaryLength(0), isBinaryResponse(false) {
 }
 
@@ -93,8 +92,8 @@ Response& Response::view(const String& template_name, const JsonDocument& data) 
 }
 
 Response& Response::file(const String& path) {
-    // Check if file exists in SPIFFS
-    if (!SPIFFS.exists(path)) {
+    // Check if file exists in storage
+    if (!storage.exists(path)) {
         statusCode = 404;
         body = "File not found";
         type = "text/plain";
@@ -102,7 +101,7 @@ Response& Response::file(const String& path) {
     }
     
     // Open file
-    File file = SPIFFS.open(path, "r");
+    File file = storage.open(path, "r");
     if (!file) {
         statusCode = 500;
         body = "Unable to open file";
@@ -173,8 +172,8 @@ void Response::send() {
         // Remove the custom header before sending
         headers.erase("X-File-Path");
         
-        // Serve file directly from SPIFFS
-        response = request->beginResponse(SPIFFS, filePath, type);
+        // Serve file directly from storage
+        response = request->beginResponse(storage, filePath, type);
         
         if (!response) {
             // Fallback if file serving fails

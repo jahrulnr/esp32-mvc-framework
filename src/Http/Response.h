@@ -2,6 +2,8 @@
 #define RESPONSE_H
 
 #include <Arduino.h>
+#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <map>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
@@ -9,6 +11,7 @@
 class Response {
 private:
     AsyncWebServerRequest* request;
+    FS& storage;
     String body;
     String type;
     int statusCode;
@@ -20,7 +23,7 @@ private:
     bool isBinaryResponse;
 
 public:
-    Response(AsyncWebServerRequest* req);
+    Response(AsyncWebServerRequest* req, FS& storageType = LittleFS);
     
     // Status codes
     Response& status(int code);
