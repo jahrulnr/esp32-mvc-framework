@@ -2,15 +2,18 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include <SPIFFS.h>
+#include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <map>
 
 class Config {
 private:
     std::map<String, String> values;
+    FS& _storageType;
 
 public:
-    Config();
+    Config(FS& storageType);
     
     void load();
     void set(const String& key, const String& value);

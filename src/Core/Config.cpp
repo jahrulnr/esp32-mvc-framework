@@ -1,7 +1,6 @@
 #include "Config.h"
-#include <SPIFFS.h>
 
-Config::Config() {
+Config::Config(FS& storageType): _storageType(storageType) {
     // Set default values
     set("app.name", "ESP32 MVC App");
     set("app.env", "production");
@@ -11,9 +10,9 @@ Config::Config() {
 }
 
 void Config::load() {
-    // Try to load config from SPIFFS
-    if (SPIFFS.exists("/config.json")) {
-        File configFile = SPIFFS.open("/config.json", "r");
+    // Try to load config from _storageType
+    if (_storageType.exists("/config.json")) {
+        File configFile = _storageType.open("/config.json", "r");
         if (configFile) {
             String configString = configFile.readString();
             configFile.close();
